@@ -1,0 +1,14 @@
+# Tema fijo (claro, verde y blanco): no cambia según el modo del navegador o del sistema.
+[theme]
+base = "light"
+primaryColor = "#0F6B47"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#EEF5F1"
+textColor = "#16301F"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

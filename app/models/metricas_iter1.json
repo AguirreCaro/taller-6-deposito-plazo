@@ -1,0 +1,93 @@
+{
+  "iteracion": "Iteración 1",
+  "n_test": 9043,
+  "modelos": {
+    "Árbol de Decisión": {
+      "base": {
+        "accuracy": 0.8303660289726861,
+        "precision": 0.2976190476190476,
+        "recall": 0.33081285444234404,
+        "f1": 0.3133393017009848,
+        "vn": 7159,
+        "fp": 826,
+        "fn": 708,
+        "vp": 350
+      },
+      "optimizado": {
+        "accuracy": 0.8324671016255667,
+        "precision": 0.3605857230018304,
+        "recall": 0.558601134215501,
+        "f1": 0.4382647385984427,
+        "vn": 6937,
+        "fp": 1048,
+        "fn": 467,
+        "vp": 591
+      },
+      "hiperparametros": {
+        "class_weight": "balanced",
+        "max_depth": 8,
+        "min_samples_leaf": 1,
+        "min_samples_split": 10
+      },
+      "f1_cv": 0.4227572501901643
+    },
+    "Regresión Logística": {
+      "base": {
+        "accuracy": 0.8932876257879022,
+        "precision": 0.6654804270462633,
+        "recall": 0.1767485822306238,
+        "f1": 0.2793129200896191,
+        "vn": 7891,
+        "fp": 94,
+        "fn": 871,
+        "vp": 187
+      },
+      "optimizado": {
+        "accuracy": 0.7588189760035386,
+        "precision": 0.2699713232281852,
+        "recall": 0.6228733459357277,
+        "f1": 0.3766790511574736,
+        "vn": 6203,
+        "fp": 1782,
+        "fn": 399,
+        "vp": 659
+      },
+      "hiperparametros": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "solver": "saga"
+      },
+      "f1_cv": 0.37544803522441067
+    },
+    "Random Forest": {
+      "base": {
+        "accuracy": 0.8943934534999447,
+        "precision": 0.6373333333333333,
+        "recall": 0.22589792060491493,
+        "f1": 0.3335659455687369,
+        "vn": 7849,
+        "fp": 136,
+        "fn": 819,
+        "vp": 239
+      },
+      "optimizado": {
+        "accuracy": 0.822735817759593,
+        "precision": 0.3511742217367559,
+        "recall": 0.6077504725897921,
+        "f1": 0.4451367255105573,
+        "vn": 6797,
+        "fp": 1188,
+        "fn": 415,
+        "vp": 643
+      },
+      "hiperparametros": {
+        "class_weight": "balanced",
+        "max_depth": 10,
+        "min_samples_split": 5,
+        "n_estimators": 100
+      },
+      "f1_cv": 0.4396134003180584
+    }
+  },
+  "mejor_modelo": "Random Forest"
+}

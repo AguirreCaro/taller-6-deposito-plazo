@@ -1,0 +1,146 @@
+{
+  "columnas": [
+    "age",
+    "job",
+    "marital",
+    "education",
+    "default",
+    "balance",
+    "housing",
+    "loan",
+    "contact",
+    "day",
+    "month",
+    "campaign",
+    "pdays",
+    "previous",
+    "poutcome"
+  ],
+  "numericas": {
+    "age": {
+      "min": 18,
+      "max": 95,
+      "mediana": 39
+    },
+    "balance": {
+      "min": -8019,
+      "max": 102127,
+      "mediana": 448
+    },
+    "day": {
+      "min": 1,
+      "max": 31,
+      "mediana": 16
+    },
+    "campaign": {
+      "min": 1,
+      "max": 63,
+      "mediana": 2
+    },
+    "pdays": {
+      "min": -1,
+      "max": 871,
+      "mediana": -1
+    },
+    "previous": {
+      "min": 0,
+      "max": 275,
+      "mediana": 0
+    }
+  },
+  "categoricas": {
+    "job": {
+      "categorias": [
+        "admin.",
+        "blue-collar",
+        "entrepreneur",
+        "housemaid",
+        "management",
+        "retired",
+        "self-employed",
+        "services",
+        "student",
+        "technician",
+        "unemployed",
+        "unknown"
+      ],
+      "moda": "blue-collar"
+    },
+    "marital": {
+      "categorias": [
+        "divorced",
+        "married",
+        "single"
+      ],
+      "moda": "married"
+    },
+    "education": {
+      "categorias": [
+        "primary",
+        "secondary",
+        "tertiary",
+        "unknown"
+      ],
+      "moda": "secondary"
+    },
+    "default": {
+      "categorias": [
+        "no",
+        "yes"
+      ],
+      "moda": "no"
+    },
+    "housing": {
+      "categorias": [
+        "no",
+        "yes"
+      ],
+      "moda": "yes"
+    },
+    "loan": {
+      "categorias": [
+        "no",
+        "yes"
+      ],
+      "moda": "no"
+    },
+    "contact": {
+      "categorias": [
+        "cellular",
+        "telephone",
+        "unknown"
+      ],
+      "moda": "cellular"
+    },
+    "month": {
+      "categorias": [
+        "apr",
+        "aug",
+        "dec",
+        "feb",
+        "jan",
+        "jul",
+        "jun",
+        "mar",
+        "may",
+        "nov",
+        "oct",
+        "sep"
+      ],
+      "moda": "may"
+    },
+    "poutcome": {
+      "categorias": [
+        "failure",
+        "other",
+        "success",
+        "unknown"
+      ],
+      "moda": "unknown"
+    }
+  },
+  "excluidas": [
+    "duration"
+  ],
+  "objetivo": "y"
+}
