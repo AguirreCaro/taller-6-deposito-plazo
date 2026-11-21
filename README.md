@@ -1,11 +1,16 @@
-# Taller 6 — Predicción de contratación de depósitos a plazo (CRISP-DM, iteración 1)
+# Taller 6 — Predicción de contratación de depósitos a plazo (CRISP-DM, iteraciones 1 y 2)
 
 **Integrantes:** Antonella Aedo · Carolina Aguirre · Benjamín Díaz
 
-Primera iteración de la metodología CRISP-DM sobre el dataset *Bank Marketing* (`bank-full.csv`):
-se predice si un cliente contratará un depósito a plazo (`y`). Se comparan tres modelos
-(Árbol de Decisión, Regresión Logística y Random Forest), cada uno con su versión base y su versión
-optimizada con `GridSearchCV`, y los resultados se consultan en una aplicación web hecha con Streamlit.
+Metodología CRISP-DM sobre el dataset *Bank Marketing* (`bank-full.csv`): se predice si un cliente
+contratará un depósito a plazo (`y`). Se desarrollaron **dos iteraciones**. En cada una se comparan tres
+modelos (Árbol de Decisión, Regresión Logística y Random Forest), cada uno con su versión base y su
+versión optimizada, y los resultados se consultan en una aplicación web hecha con Streamlit.
+
+| Iteración | Qué cambia | Variables | Mejor modelo (F1 en prueba) |
+|---|---|---|---|
+| 1 | Línea base, sin `duration`, `GridSearchCV` | 15 | Random Forest, 0,4451 |
+| 2 | Se vuelve a la comprensión del negocio: se quitan `day` y `campaign`, que no se conocen antes de llamar | 13 | Random Forest, 0,4263 |
 
 ## Contenido de la carpeta
 
@@ -67,7 +72,7 @@ Importante: ejecutar el comando **desde la carpeta `Taller 6`**, para que se apl
    entrenamiento ni en la validación cruzada** (el 20 % de prueba). Muestra Accuracy, Precision,
    Recall y F1, matriz de confusión y la tabla de predicciones, descargable en CSV.
 3. **Desempeño de los modelos:** puntajes de cada iteración, comparación entre la versión base y la
-   optimizada, hiperparámetros óptimos y modelo seleccionado (Random Forest, F1 = 0,4451).
+   optimizada, comparación entre iteraciones, hiperparámetros óptimos y modelo seleccionado de la iteración elegida.
 
 ## Ejecutar el notebook
 
@@ -77,15 +82,17 @@ debe abrirse con esta carpeta como directorio de trabajo (así lo hacen Jupyter 
 porque lee `bank-full.csv` con una ruta relativa.
 
 - El notebook entregado **ya está ejecutado**; sus resultados se pueden revisar sin volver a correrlo.
-- Para volver a ejecutarlo completo: *Run All*. Los `GridSearchCV` (sobre todo el de Random Forest)
-  tardan varios minutos, entre 15 y 40 según el equipo.
+- Para volver a ejecutarlo completo: *Run All*. Los `GridSearchCV` (sobre todo los de Random Forest)
+  tardan en total cerca de 15 minutos en un equipo de 12 núcleos (más en equipos con menos núcleos).
 - Al terminar, la **Fase 6** regenera los archivos de `app/models` y `app/data` que usa la aplicación
   y comprueba que los modelos guardados predicen exactamente igual que los del notebook. Si se
   reejecuta, conviene reiniciar la aplicación.
 
 ## Decisiones de diseño relevantes
 
-- Se excluye `duration` (duración de la llamada): no se conoce antes de contactar al cliente.
+- Se excluye `duration` (duración de la llamada): no se conoce antes de contactar al cliente. En la
+  iteración 2 se aplica el mismo criterio a `day` y `campaign`, y la aplicación solo pide las 13 variables que usa.
+- El modelo de cada iteración se elige por su F1 en validación cruzada, no con los datos de prueba.
 - El preprocesamiento (`StandardScaler` + `OneHotEncoder`) va **dentro** del `Pipeline` de cada modelo.
   La aplicación llama directamente a ese `Pipeline`, por lo que el preprocesamiento al predecir es
   idéntico al del entrenamiento.
@@ -102,14 +109,17 @@ app/
   utils.py        # carga de modelos, validación de datos y métricas
   formulario.py   # formulario de ingreso de datos del cliente
   estilos.py      # tema, encabezado y gráficos
-  models/         # modelos (.joblib), métricas y esquema de variables
+  models/         # modelos (.joblib), métricas (con la lista de variables de cada iteración) y esquema
   data/           # datos de generalización
 ```
 
-Para sumar la iteración 2 o 3: exportar sus modelos, métricas y datos de generalización con el sufijo
-`iter2` / `iter3` (mismo bloque de la Fase 6 del notebook) y agregar una entrada al diccionario
-`ITERACIONES` de `app/config.py`. La aplicación recorre ese registro y la nueva iteración aparece en
-el selector y en la comparación de desempeño.
+Para sumar una nueva iteración (la 3, por ejemplo): exportar sus modelos y métricas con el sufijo
+`iter3` (función `exportar_iteracion` de la sección 6.5 del notebook, indicando las variables que usa) y
+agregar una entrada al diccionario `ITERACIONES` de `app/config.py`. La aplicación recorre ese registro y
+la nueva iteración aparece en el selector y en la comparación de desempeño. La lista de variables de cada
+iteración se lee de su JSON de métricas, así que el formulario y la evaluación se ajustan solos. Si la
+iteración agrega pasos de preparación propios (por ejemplo, una clase que crea variables nuevas), esa clase
+debe quedar en un módulo dentro de `app/`, para que los modelos guardados puedan cargarse desde la aplicación.
 
 ## Solución de problemas
 

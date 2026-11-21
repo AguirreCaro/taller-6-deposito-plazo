@@ -59,6 +59,21 @@ def modelos_disponibles(iteracion: dict) -> dict:
     return {n: str(r) for n, r in iteracion["modelos"].items() if r.exists()}
 
 
+def esquema_de_iteracion(esquema: dict, metricas: dict | None) -> dict:
+    """Esquema acotado a las variables que usa la iteración.
+
+    La lista sale del JSON de métricas (clave "variables"); si no existe, se usan todas.
+    """
+    usadas = set((metricas or {}).get("variables") or esquema["columnas"])
+    return {
+        **esquema,
+        "columnas": [c for c in esquema["columnas"] if c in usadas],
+        "numericas": {c: v for c, v in esquema["numericas"].items() if c in usadas},
+        "categoricas": {c: v for c, v in esquema["categoricas"].items() if c in usadas},
+        "columnas_dataset": esquema["columnas"],
+    }
+
+
 def validar_datos(df: pd.DataFrame, esquema: dict) -> tuple[pd.DataFrame, list[str]]:
     """Deja el DataFrame con las columnas del esquema, en su orden.
 
@@ -69,7 +84,9 @@ def validar_datos(df: pd.DataFrame, esquema: dict) -> tuple[pd.DataFrame, list[s
         raise ValueError(f"Faltan columnas requeridas: {', '.join(faltantes)}")
 
     advertencias = []
-    sobrantes = [c for c in df.columns if c not in esquema["columnas"] and c != esquema["objetivo"]]
+    # Las columnas del dataset que esta iteración no usa se omiten sin avisar; solo se avisa de las ajenas al dataset
+    conocidas = set(esquema.get("columnas_dataset", esquema["columnas"])) | {esquema["objetivo"]}
+    sobrantes = [c for c in df.columns if c not in conocidas]
     if sobrantes:
         advertencias.append(f"Se ignoran columnas que el modelo no usa: {', '.join(sobrantes)}")
 

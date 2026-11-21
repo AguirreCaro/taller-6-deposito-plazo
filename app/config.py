@@ -29,12 +29,21 @@ ITERACIONES = {
         "metricas": DIR_MODELOS / "metricas_iter1.json",
         "datos_generalizacion": DIR_DATOS / "generalizacion_iter1.csv",
     },
-    # "Iteración 2": {
-    #     "descripcion": "...",
-    #     "modelos": {"Nombre del modelo": DIR_MODELOS / "modelo_iter2.joblib", ...},
-    #     "metricas": DIR_MODELOS / "metricas_iter2.json",
-    #     "datos_generalizacion": DIR_DATOS / "generalizacion_iter2.csv",
-    # },
+    "Iteración 2": {
+        "descripcion": (
+            "Vuelta a la comprensión del negocio: solo variables conocidas antes de llamar "
+            "(13 variables, sin `day` ni `campaign`), con las mismas grillas de la iteración 1."
+        ),
+        "modelos": {
+            "Árbol de Decisión": DIR_MODELOS / "arbol_decision_iter2.joblib",
+            "Regresión Logística": DIR_MODELOS / "regresion_logistica_iter2.joblib",
+            "Random Forest": DIR_MODELOS / "random_forest_iter2.joblib",
+        },
+        "metricas": DIR_MODELOS / "metricas_iter2.json",
+        # La división de datos es la misma en todas las iteraciones: se reutiliza el mismo archivo.
+        # Las variables que usa cada iteración se leen de su JSON de métricas (clave "variables").
+        "datos_generalizacion": DIR_DATOS / "generalizacion_iter1.csv",
+    },
 }
 
 # Pendiente para el examen: selección de las variables más importantes.

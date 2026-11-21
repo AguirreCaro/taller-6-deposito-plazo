@@ -104,27 +104,38 @@ def mostrar(esquema):
         with c4:
             v["loan"] = _cat(esquema, "loan", "¿Tiene préstamo personal?", "Préstamo de consumo vigente.")
 
-    with st.container(border=True):
-        st.markdown("##### :material/call: Contacto en la campaña actual")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            v["contact"] = _cat(esquema, "contact", "Medio de contacto", "Canal usado para llamar al cliente.")
-        with c2:
-            v["day"] = _num(
-                esquema, "day", "Día del mes del último contacto",
-                "Día del mes (1 a 31) en que se contactó por última vez al cliente en esta campaña.",
+    # Las iteraciones que usan solo variables conocidas antes de llamar no tienen `day` ni `campaign`:
+    # el formulario muestra solo los campos que existen en el esquema de la iteración elegida.
+    antes_de_llamar = "day" not in esquema["columnas"] and "campaign" not in esquema["columnas"]
+    campos = {
+        "contact": lambda: _cat(
+            esquema, "contact", "Medio de contacto",
+            "Canal con que se planea llamar al cliente." if antes_de_llamar else "Canal usado para llamar al cliente.",
+        ),
+        "day": lambda: _num(
+            esquema, "day", "Día del mes del último contacto",
+            "Día del mes (1 a 31) en que se contactó por última vez al cliente en esta campaña.",
+        ),
+        "month": lambda: _cat(
+            esquema, "month", "Mes en que se llamaría" if antes_de_llamar else "Mes del último contacto",
+            "Mes del año en que se planea llamar al cliente." if antes_de_llamar
+            else "Mes del año en que se contactó por última vez al cliente en esta campaña.",
+        ),
+        "campaign": lambda: _num(
+            esquema, "campaign", "Contactos en esta campaña",
+            "Cantidad de veces que se ha contactado a este cliente en la campaña actual, incluyendo el contacto más reciente.",
+            minimo=1,
+        ),
+    }
+    presentes = [c for c in campos if c in esquema["columnas"]]
+    if presentes:
+        with st.container(border=True):
+            st.markdown(
+                "##### :material/call: " + ("Plan de la campaña" if antes_de_llamar else "Contacto en la campaña actual")
             )
-        with c3:
-            v["month"] = _cat(
-                esquema, "month", "Mes del último contacto",
-                "Mes del año en que se contactó por última vez al cliente en esta campaña.",
-            )
-        with c4:
-            v["campaign"] = _num(
-                esquema, "campaign", "Contactos en esta campaña",
-                "Cantidad de veces que se ha contactado a este cliente en la campaña actual, incluyendo el contacto más reciente.",
-                minimo=1,
-            )
+            for columna_st, nombre in zip(st.columns(len(presentes)), presentes):
+                with columna_st:
+                    v[nombre] = campos[nombre]()
 
     with st.container(border=True):
         st.markdown("##### :material/history: Historial de campañas anteriores")

@@ -30,7 +30,7 @@ if not config.ESQUEMA.exists():
     )
     st.stop()
 
-esquema = utils.cargar_json(str(config.ESQUEMA))
+esquema_base = utils.cargar_json(str(config.ESQUEMA))
 iteraciones = {
     nombre: it for nombre, it in config.ITERACIONES.items() if utils.modelos_disponibles(it)
 }
@@ -48,13 +48,19 @@ with st.sidebar:
     )
     iteracion = iteraciones[nombre_iter]
     rutas_modelos = utils.modelos_disponibles(iteracion)
-    st.divider()
-    st.caption(f":material/rule: Variables usadas: {len(esquema['columnas'])}")
 
 metricas_iter = (
     utils.cargar_json(str(iteracion["metricas"])) if iteracion["metricas"].exists() else None
 )
 mejor_modelo = metricas_iter["mejor_modelo"] if metricas_iter else None
+
+# Cada iteración puede usar un subconjunto de las variables: el formulario y la validación
+# de datos se ajustan a las que figuran en su JSON de métricas.
+esquema = utils.esquema_de_iteracion(esquema_base, metricas_iter)
+
+with st.sidebar:
+    st.divider()
+    st.caption(f":material/rule: Variables usadas: {len(esquema['columnas'])} de {len(esquema_base['columnas'])}")
 
 estilos.encabezado()
 
@@ -95,12 +101,21 @@ with tab_pred:
                     st.metric("Predicción", etiqueta)
                     st.metric("Probabilidad de contratar", f"{proba.iloc[0]:.1%}")
         if mejor_modelo in elegidos:
-            st.caption("**Seleccionado:** modelo con mejor desempeño (F1) en la evaluación de esta iteración.")
-        st.caption(
-            "Los modelos fueron entrenados dando más peso a los clientes que sí contratan (`class_weight='balanced'`), "
-            "por lo que la probabilidad no es una tasa real: sirve para comparar clientes entre sí. "
-            "Solo el 11,7 % de los clientes del dataset contrató."
+            st.caption("**Seleccionado:** modelo con mejor F1 en validación cruzada en esta iteración.")
+        balanceados = bool(metricas_iter) and all(
+            d["hiperparametros"].get("class_weight") == "balanced" for d in metricas_iter["modelos"].values()
         )
+        if balanceados:
+            st.caption(
+                "Los modelos fueron entrenados dando más peso a los clientes que sí contratan (`class_weight='balanced'`), "
+                "por lo que la probabilidad no es una tasa real: sirve para comparar clientes entre sí. "
+                "Solo el 11,7 % de los clientes del dataset contrató."
+            )
+        else:
+            st.caption(
+                "La probabilidad es una estimación del modelo y sirve sobre todo para comparar clientes entre sí. "
+                "Solo el 11,7 % de los clientes del dataset contrató."
+            )
         estilos.barras(
             pd.DataFrame(resultados).set_index("Modelo"), y_titulo="Probabilidad de contratar", formato=".1%"
         )

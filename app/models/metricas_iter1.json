@@ -1,6 +1,23 @@
 {
   "iteracion": "Iteración 1",
   "n_test": 9043,
+  "variables": [
+    "age",
+    "job",
+    "marital",
+    "education",
+    "default",
+    "balance",
+    "housing",
+    "loan",
+    "contact",
+    "day",
+    "month",
+    "campaign",
+    "pdays",
+    "previous",
+    "poutcome"
+  ],
   "modelos": {
     "Árbol de Decisión": {
       "base": {
