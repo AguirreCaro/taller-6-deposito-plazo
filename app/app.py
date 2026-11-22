@@ -41,26 +41,25 @@ if not iteraciones:
 # ------------------------------------------------------------------- sidebar
 with st.sidebar:
     estilos.marca_lateral()
-    nombre_iter = st.selectbox(
-        "Versión del modelo (iteración)", list(iteraciones),
-        help="Cada iteración es una nueva versión del trabajo: se construye un modelo, se evalúa, "
-             "se detectan mejoras y se repite el proceso. La app permite consultar y comparar cada versión.",
+    nombres_iteraciones = list(iteraciones)
+    st.caption("Selecciona la iteración en Predicción individual o Datos de generalización.")
+
+
+def contexto_iteracion(nombre):
+    iteracion = iteraciones[nombre]
+    rutas = utils.modelos_disponibles(iteracion)
+    metricas = (
+        utils.cargar_json(str(iteracion["metricas"])) if iteracion["metricas"].exists() else None
     )
-    iteracion = iteraciones[nombre_iter]
-    rutas_modelos = utils.modelos_disponibles(iteracion)
+    esquema = utils.esquema_de_iteracion(esquema_base, metricas)
+    return iteracion, rutas, metricas, esquema
 
-metricas_iter = (
-    utils.cargar_json(str(iteracion["metricas"])) if iteracion["metricas"].exists() else None
-)
-mejor_modelo = metricas_iter["mejor_modelo"] if metricas_iter else None
 
-# Cada iteración puede usar un subconjunto de las variables: el formulario y la validación
-# de datos se ajustan a las que figuran en su JSON de métricas.
-esquema = utils.esquema_de_iteracion(esquema_base, metricas_iter)
-
-with st.sidebar:
-    st.divider()
-    st.caption(f":material/rule: Variables usadas: {len(esquema['columnas'])} de {len(esquema_base['columnas'])}")
+def umbral_modelo(nombre, metricas):
+    if not metricas:
+        return 0.5
+    datos_modelo = metricas["modelos"].get(nombre, {})
+    return float(datos_modelo.get("umbral_optimo", 0.5))
 
 estilos.encabezado()
 
@@ -78,32 +77,68 @@ with tab_pred:
         "Los tres modelos estimarán qué tan probable es que contrate un depósito a plazo."
     )
 
-    formulario.inicializar(esquema)
-    valores = formulario.mostrar(esquema)
+    nombre_iter_pred = st.selectbox(
+        "Iteración del modelo", nombres_iteraciones, index=0, key="iteracion_prediccion"
+    )
+    _, rutas_modelos_pred, metricas_pred, esquema_pred = contexto_iteracion(nombre_iter_pred)
+    mejor_modelo_pred = metricas_pred["mejor_modelo"] if metricas_pred else None
+    ganador_final_pred = metricas_pred.get("ganador_final", {}) if metricas_pred else {}
+    st.caption(f"Variables usadas: {len(esquema_pred['columnas'])} de {len(esquema_base['columnas'])}")
 
+    formulario.inicializar(esquema_pred)
+    valores = formulario.mostrar(esquema_pred)
+
+    if ganador_final_pred:
+        st.info(
+            f"Modelo recomendado: **{ganador_final_pred['modelo']}** "
+            f"(umbral óptimo {ganador_final_pred.get('umbral', 0.5):.2f}).",
+            icon=":material/recommend:",
+        )
     elegidos = st.multiselect(
-        "Modelos a consultar", list(rutas_modelos), default=list(rutas_modelos), key="modelos_pred"
+        "Modelos a consultar", list(rutas_modelos_pred), default=list(rutas_modelos_pred),
+        key=f"modelos_pred_v2_{nombre_iter_pred}",
     )
 
     if st.button("Predecir", type="primary", icon=":material/query_stats:", disabled=not elegidos):
-        cliente = pd.DataFrame([valores])[esquema["columnas"]]
+        cliente = pd.DataFrame([valores])[esquema_pred["columnas"]]
         resultados = []
         columnas_res = st.columns(len(elegidos))
         for columna, nombre in zip(columnas_res, elegidos):
-            clase, proba = utils.predecir(utils.cargar_modelo(rutas_modelos[nombre]), cliente)
+            clase, proba = utils.predecir(
+                utils.cargar_modelo(rutas_modelos_pred[nombre]), cliente,
+                umbral_modelo(nombre, metricas_pred),
+            )
             resultados.append({"Modelo": nombre, "Probabilidad de contratar": float(proba.iloc[0])})
             etiqueta = utils.ETIQUETAS[int(clase.iloc[0])]
             with columna:
                 with st.container(border=True):
                     st.markdown(
-                        f"**{nombre}**" + (" :green-badge[:material/star: Seleccionado]" if nombre == mejor_modelo else "")
+                        f"**{nombre}**"
+                        + (
+                            " :green-badge[:material/star: Mejor en validación]"
+                            if nombre == mejor_modelo_pred else ""
+                        )
+                        + (
+                            " :orange-badge[:material/trophy: Ganador final]"
+                            if nombre == ganador_final_pred.get("modelo") else ""
+                        )
                     )
                     st.metric("Predicción", etiqueta)
                     st.metric("Probabilidad de contratar", f"{proba.iloc[0]:.1%}")
-        if mejor_modelo in elegidos:
-            st.caption("**Seleccionado:** modelo con mejor F1 en validación cruzada en esta iteración.")
-        balanceados = bool(metricas_iter) and all(
-            d["hiperparametros"].get("class_weight") == "balanced" for d in metricas_iter["modelos"].values()
+                    if umbral_modelo(nombre, metricas_pred) != 0.5:
+                        st.caption(
+                            f"Umbral de decisión: {umbral_modelo(nombre, metricas_pred):.2f}"
+                        )
+        if mejor_modelo_pred in elegidos:
+            st.caption("**Mejor en validación:** modelo con mayor F1 en validación cruzada.")
+        if ganador_final_pred.get("modelo") in elegidos:
+            st.caption(
+                f"**Ganador final:** {ganador_final_pred['modelo']} "
+                f"(umbral {ganador_final_pred['umbral']:.2f})."
+            )
+        balanceados = bool(metricas_pred) and all(
+            d["hiperparametros"].get("class_weight") == "balanced"
+            for d in metricas_pred["modelos"].values()
         )
         if balanceados:
             st.caption(
@@ -123,9 +158,15 @@ with tab_pred:
 # ------------------------------------------------------ 2. datos de generalización
 with tab_gen:
     st.subheader("Evaluación con datos no vistos en el entrenamiento")
+    nombre_iter_gen = st.selectbox(
+        "Iteración del modelo", nombres_iteraciones, index=0, key="iteracion_generalizacion"
+    )
+    iteracion_gen, rutas_modelos_gen, metricas_gen, esquema_gen = contexto_iteracion(nombre_iter_gen)
+    mejor_modelo_gen = metricas_gen["mejor_modelo"] if metricas_gen else None
+    ganador_final_gen = metricas_gen.get("ganador_final", {}) if metricas_gen else {}
     datos = None
-    if iteracion["datos_generalizacion"].exists():
-        datos = utils.cargar_csv(str(iteracion["datos_generalizacion"]))
+    if iteracion_gen["datos_generalizacion"].exists():
+        datos = utils.cargar_csv(str(iteracion_gen["datos_generalizacion"]))
         st.caption(
             f"{len(datos):,} registros del 20 % de prueba: no participaron en el entrenamiento "
             "ni en la validación cruzada."
@@ -135,21 +176,34 @@ with tab_gen:
 
     if datos is not None:
         try:
-            X, avisos = utils.validar_datos(datos, esquema)
-            y_real = utils.objetivo_a_binario(datos[esquema["objetivo"]]) if esquema["objetivo"] in datos else None
+            X, avisos = utils.validar_datos(datos, esquema_gen)
+            y_real = (
+                utils.objetivo_a_binario(datos[esquema_gen["objetivo"]])
+                if esquema_gen["objetivo"] in datos else None
+            )
         except ValueError as error:
             st.error(str(error))
             st.stop()
         for aviso in avisos:
             st.warning(aviso)
 
+        if ganador_final_gen:
+            st.info(
+                f"Modelo recomendado: **{ganador_final_gen['modelo']}** "
+                f"(umbral óptimo {ganador_final_gen.get('umbral', 0.5):.2f}).",
+                icon=":material/recommend:",
+            )
         elegidos_gen = st.multiselect(
-            "Modelos a evaluar", list(rutas_modelos), default=list(rutas_modelos), key="modelos_gen"
+            "Modelos a evaluar", list(rutas_modelos_gen), default=list(rutas_modelos_gen),
+            key=f"modelos_gen_v2_{nombre_iter_gen}",
         )
         if elegidos_gen:
             filas, predicciones = [], {}
             for nombre in elegidos_gen:
-                clase, proba = utils.predecir(utils.cargar_modelo(rutas_modelos[nombre]), X)
+                clase, proba = utils.predecir(
+                    utils.cargar_modelo(rutas_modelos_gen[nombre]), X,
+                    umbral_modelo(nombre, metricas_gen),
+                )
                 predicciones[nombre] = (clase, proba)
                 if y_real is not None:
                     filas.append({"Modelo": nombre, **utils.calcular_metricas(y_real, clase)})
@@ -201,8 +255,15 @@ with tab_met:
             continue
         met = utils.cargar_json(str(it["metricas"]))
         for modelo, datos_m in met["modelos"].items():
-            for version in ("base", "optimizado"):
-                m = datos_m[version]
+            versiones = {
+                "Base": datos_m["base"],
+                "Optimizado": datos_m["optimizado"],
+            } if "base" in datos_m else {
+                "Optimizado": datos_m["optimizado"],
+            }
+            if "optimizado_umbral" in datos_m:
+                versiones["Optimizado (umbral)"] = datos_m["optimizado_umbral"]
+            for version, m in versiones.items():
                 filas.append({
                     "Iteración": nombre_it, "Modelo": modelo, "Versión": version.capitalize(),
                     "Accuracy": m["accuracy"], "Precision": m["precision"],
@@ -215,24 +276,79 @@ with tab_met:
     else:
         df_met = pd.DataFrame(filas)
         formato = {c: "{:.4f}" for c in ["Accuracy", "Precision", "Recall", "F1"]}
-        st.dataframe(df_met.style.format(formato), width="stretch", hide_index=True)
+        opciones_iter = ["Todas"] + list(iteraciones)
+        iteracion_filtro = st.selectbox(
+            "Filtrar por iteración",
+            opciones_iter,
+            index=0,
+            key="filtro_desempeno",
+        )
+        df_filtrado = (
+            df_met if iteracion_filtro == "Todas"
+            else df_met[df_met["Iteración"] == iteracion_filtro]
+        )
+
+        st.dataframe(df_filtrado.style.format(formato), width="stretch", hide_index=True)
 
         metrica = st.radio("Métrica a comparar", ["F1", "Recall", "Precision", "Accuracy"], horizontal=True)
         izq, der = st.columns(2)
         with izq:
-            st.markdown(f"**{metrica}: modelo base vs optimizado** ({nombre_iter})")
-            sel = df_met[df_met["Iteración"] == nombre_iter]
-            estilos.barras(sel.pivot(index="Modelo", columns="Versión", values=metrica), y_titulo=metrica)
+            if iteracion_filtro == "Todas":
+                st.markdown(f"**{metrica} optimizado por iteración**")
+                opt = df_filtrado[df_filtrado["Versión"] == "Optimizado"]
+                estilos.barras(
+                    opt.pivot(index="Modelo", columns="Iteración", values=metrica),
+                    y_titulo=metrica,
+                )
+            else:
+                sel = df_filtrado
+                if "Base" in sel["Versión"].values:
+                    st.markdown(f"**{metrica}: modelo base vs optimizado** ({iteracion_filtro})")
+                else:
+                    st.markdown(f"**{metrica}: umbral predeterminado vs óptimo** ({iteracion_filtro})")
+                estilos.barras(
+                    sel.pivot(index="Modelo", columns="Versión", values=metrica),
+                    y_titulo=metrica,
+                )
         with der:
-            st.markdown(f"**{metrica} de los modelos optimizados por iteración**")
-            opt = df_met[df_met["Versión"] == "Optimizado"]
-            estilos.barras(opt.pivot(index="Modelo", columns="Iteración", values=metrica), y_titulo=metrica)
+            st.markdown(f"**Ranking de {metrica}** ({iteracion_filtro})")
+            ranking = df_filtrado[
+                df_filtrado["Versión"].isin(["Optimizado", "Optimizado (umbral)"])
+            ].copy()
+            if not ranking.empty:
+                ranking = ranking.sort_values(metrica, ascending=False)
+                ranking["Categoría"] = (
+                    ranking["Modelo"] + " · " + ranking["Iteración"]
+                    if iteracion_filtro == "Todas"
+                    else ranking["Modelo"] + " · " + ranking["Versión"]
+                )
+                estilos.barras(
+                    ranking.set_index("Categoría")[[metrica]],
+                    y_titulo=metrica,
+                )
 
-        if metricas_iter:
-            st.markdown(f"**Hiperparámetros óptimos ({nombre_iter})**")
+        if iteracion_filtro != "Todas":
+            it_filtrada = iteraciones[iteracion_filtro]
+            metricas_filtradas = (
+                utils.cargar_json(str(it_filtrada["metricas"]))
+                if it_filtrada["metricas"].exists() else None
+            )
+        else:
+            metricas_filtradas = None
+
+        if metricas_filtradas:
+            st.markdown(f"**Hiperparámetros óptimos ({iteracion_filtro})**")
             hp = pd.DataFrame({
                 modelo: {**d["hiperparametros"], "F1 en validación cruzada": round(d["f1_cv"], 4)}
-                for modelo, d in metricas_iter["modelos"].items()
+                for modelo, d in metricas_filtradas["modelos"].items()
             }).T.fillna("—").astype(str)
             st.dataframe(hp, width="stretch")
-            st.success(f"Modelo seleccionado en {nombre_iter}: **{mejor_modelo}**", icon=":material/star:")
+            modelo_seleccionado = (
+                metricas_filtradas.get("ganador_final", {}).get("modelo")
+                or metricas_filtradas["mejor_modelo"]
+            )
+            st.success(
+                f"Modelo seleccionado en {iteracion_filtro}: "
+                f"**{modelo_seleccionado}**",
+                icon=":material/star:",
+            )

@@ -113,10 +113,10 @@ def objetivo_a_binario(serie: pd.Series) -> pd.Series:
     return convertida.astype(int)
 
 
-def predecir(modelo, X: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+def predecir(modelo, X: pd.DataFrame, umbral: float = 0.5) -> tuple[pd.Series, pd.Series]:
     """Devuelve (clase predicha, probabilidad de contratar)."""
-    clases = pd.Series(modelo.predict(X), index=X.index)
     proba = pd.Series(modelo.predict_proba(X)[:, 1], index=X.index)
+    clases = (proba >= umbral).astype(int)
     return clases, proba
 
 

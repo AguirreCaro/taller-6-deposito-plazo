@@ -1,0 +1,112 @@
+{
+  "iteracion": "Iteración 3",
+  "n_test": 9043,
+  "variables": [
+    "age",
+    "job",
+    "marital",
+    "balance",
+    "housing",
+    "contact",
+    "month",
+    "pdays",
+    "previous",
+    "poutcome"
+  ],
+  "modelos": {
+    "Random Forest (10 vars)": {
+      "optimizado": {
+        "accuracy": 0.8510450071878801,
+        "precision": 0.398311048557354,
+        "recall": 0.5349716446124764,
+        "f1": 0.45663574021782977,
+        "vn": 7130,
+        "fp": 855,
+        "fn": 492,
+        "vp": 566
+      },
+      "umbral_optimo": 0.54,
+      "hiperparametros": {
+        "max_depth": 18,
+        "min_samples_leaf": 3,
+        "n_estimators": 300
+      },
+      "f1_cv": 0.4544172923195703,
+      "optimizado_umbral": {
+        "accuracy": 0.8632091120203472,
+        "precision": 0.4266994266994267,
+        "recall": 0.4924385633270321,
+        "f1": 0.45721807810443177,
+        "vn": 7285,
+        "fp": 700,
+        "fn": 537,
+        "vp": 521
+      }
+    },
+    "XGBoost (10 vars)": {
+      "optimizado": {
+        "accuracy": 0.8145526926904788,
+        "precision": 0.3363299841353781,
+        "recall": 0.6011342155009451,
+        "f1": 0.4313326551373347,
+        "vn": 6730,
+        "fp": 1255,
+        "fn": 422,
+        "vp": 636
+      },
+      "umbral_optimo": 0.58,
+      "hiperparametros": {
+        "learning_rate": 0.03,
+        "max_depth": 7,
+        "n_estimators": 150,
+        "subsample": 0.8
+      },
+      "f1_cv": 0.43279747650915124,
+      "optimizado_umbral": {
+        "accuracy": 0.8569058940617051,
+        "precision": 0.41259259259259257,
+        "recall": 0.5264650283553876,
+        "f1": 0.462624584717608,
+        "vn": 7192,
+        "fp": 793,
+        "fn": 501,
+        "vp": 557
+      }
+    },
+    "LightGBM (10 vars)": {
+      "optimizado": {
+        "accuracy": 0.8149950237752958,
+        "precision": 0.33773087071240104,
+        "recall": 0.6049149338374291,
+        "f1": 0.4334575008465967,
+        "vn": 6730,
+        "fp": 1255,
+        "fn": 418,
+        "vp": 640
+      },
+      "umbral_optimo": 0.62,
+      "hiperparametros": {
+        "learning_rate": 0.03,
+        "max_depth": -1,
+        "n_estimators": 150,
+        "num_leaves": 15
+      },
+      "f1_cv": 0.4323026855873261,
+      "optimizado_umbral": {
+        "accuracy": 0.8661948468428619,
+        "precision": 0.43790849673202614,
+        "recall": 0.5066162570888468,
+        "f1": 0.4697633654688869,
+        "vn": 7297,
+        "fp": 688,
+        "fn": 522,
+        "vp": 536
+      }
+    }
+  },
+  "mejor_modelo": "LightGBM (10 vars)",
+  "ganador_final": {
+    "modelo": "LightGBM (10 vars)",
+    "umbral": 0.62
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "columnas": [
+    "age",
+    "job",
+    "marital",
+    "balance",
+    "housing",
+    "contact",
+    "month",
+    "pdays",
+    "previous",
+    "poutcome"
+  ],
+  "numericas": {
+    "age": {
+      "min": 18,
+      "max": 95,
+      "mediana": 39
+    },
+    "balance": {
+      "min": -8019,
+      "max": 102127,
+      "mediana": 451
+    },
+    "pdays": {
+      "min": -1,
+      "max": 871,
+      "mediana": -1
+    },
+    "previous": {
+      "min": 0,
+      "max": 275,
+      "mediana": 0
+    }
+  },
+  "categoricas": {
+    "job": {
+      "categorias": [
+        "admin.",
+        "blue-collar",
+        "entrepreneur",
+        "housemaid",
+        "management",
+        "retired",
+        "self-employed",
+        "services",
+        "student",
+        "technician",
+        "unemployed",
+        "unknown"
+      ],
+      "moda": "blue-collar"
+    },
+    "marital": {
+      "categorias": [
+        "divorced",
+        "married",
+        "single"
+      ],
+      "moda": "married"
+    },
+    "housing": {
+      "categorias": [
+        "no",
+        "yes"
+      ],
+      "moda": "yes"
+    },
+    "contact": {
+      "categorias": [
+        "cellular",
+        "telephone",
+        "unknown"
+      ],
+      "moda": "cellular"
+    },
+    "month": {
+      "categorias": [
+        "apr",
+        "aug",
+        "dec",
+        "feb",
+        "jan",
+        "jul",
+        "jun",
+        "mar",
+        "may",
+        "nov",
+        "oct",
+        "sep"
+      ],
+      "moda": "may"
+    },
+    "poutcome": {
+      "categorias": [
+        "failure",
+        "other",
+        "success",
+        "unknown"
+      ],
+      "moda": "unknown"
+    }
+  },
+  "excluidas": [
+    "default",
+    "loan",
+    "education"
+  ],
+  "objetivo": "y"
+}

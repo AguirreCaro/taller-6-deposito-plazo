@@ -44,8 +44,19 @@ ITERACIONES = {
         # Las variables que usa cada iteración se leen de su JSON de métricas (clave "variables").
         "datos_generalizacion": DIR_DATOS / "generalizacion_iter1.csv",
     },
+    "Iteración 3": {
+        "descripcion": (
+            "Selección de variables por importancia: 10 variables, sin variables personales "
+            "desactualizadas ni información posterior al contacto. Se comparan Random Forest, "
+            "XGBoost y LightGBM con ajuste del umbral de decisión."
+        ),
+        "modelos": {
+            "Random Forest (10 vars)": DIR_MODELOS / "random_forest_iter3.joblib",
+            "XGBoost (10 vars)": DIR_MODELOS / "xgboost_iter3.joblib",
+            "LightGBM (10 vars)": DIR_MODELOS / "lightgbm_iter3.joblib",
+        },
+        "metricas": DIR_MODELOS / "metricas_iter3.json",
+        "datos_generalizacion": DIR_DATOS / "generalizacion_iter3.csv",
+    },
 }
 
-# Pendiente para el examen: selección de las variables más importantes.
-# Cuando exista, se puede registrar aquí (p. ej. ranking de importancias por iteración)
-# y mostrarlo en una pestaña nueva de app.py.

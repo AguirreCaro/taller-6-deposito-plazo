@@ -74,35 +74,41 @@ def mostrar(esquema):
     """Dibuja el formulario y devuelve {columna: valor} con los valores originales del modelo."""
     v = {}
 
-    with st.container(border=True):
-        st.markdown("##### :material/person: Perfil del cliente")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            v["age"] = _num(esquema, "age", "Edad (años)", "Edad actual del cliente.")
-        with c2:
-            v["job"] = _cat(esquema, "job", "Ocupación", "Tipo de trabajo del cliente.")
-        with c3:
-            v["marital"] = _cat(esquema, "marital", "Estado civil", "Divorciado/a incluye viudos/as.")
-        with c4:
-            v["education"] = _cat(esquema, "education", "Nivel educativo", "Máximo nivel educativo alcanzado.")
+    campos_perfil = {
+        "age": lambda: _num(esquema, "age", "Edad (años)", "Edad actual del cliente."),
+        "job": lambda: _cat(esquema, "job", "Ocupación", "Tipo de trabajo del cliente."),
+        "marital": lambda: _cat(esquema, "marital", "Estado civil", "Divorciado/a incluye viudos/as."),
+        "education": lambda: _cat(esquema, "education", "Nivel educativo", "Máximo nivel educativo alcanzado."),
+    }
+    presentes = [col for col in esquema["columnas"] if col in campos_perfil]
+    if presentes:
+        with st.container(border=True):
+            st.markdown("##### :material/person: Perfil del cliente")
+            for columna_st, nombre in zip(st.columns(len(presentes)), presentes):
+                with columna_st:
+                    v[nombre] = campos_perfil[nombre]()
 
-    with st.container(border=True):
-        st.markdown("##### :material/account_balance_wallet: Situación financiera")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            v["balance"] = _num(
+    campos_financieros = {
+        "balance": lambda: _num(
                 esquema, "balance", "Saldo promedio anual (€)",
                 "Saldo medio de la cuenta del cliente durante el año, en euros. Puede ser negativo.",
-            )
-        with c2:
-            v["default"] = _cat(
+        ),
+        "default": lambda: _cat(
                 esquema, "default", "¿Tiene deudas en mora?",
                 "'Sí' si el cliente tiene un crédito en incumplimiento (impago).",
-            )
-        with c3:
-            v["housing"] = _cat(esquema, "housing", "¿Tiene crédito hipotecario?", "Préstamo para vivienda vigente.")
-        with c4:
-            v["loan"] = _cat(esquema, "loan", "¿Tiene préstamo personal?", "Préstamo de consumo vigente.")
+        ),
+        "housing": lambda: _cat(
+            esquema, "housing", "¿Tiene crédito hipotecario?", "Préstamo para vivienda vigente."
+        ),
+        "loan": lambda: _cat(esquema, "loan", "¿Tiene préstamo personal?", "Préstamo de consumo vigente."),
+    }
+    presentes = [col for col in esquema["columnas"] if col in campos_financieros]
+    if presentes:
+        with st.container(border=True):
+            st.markdown("##### :material/account_balance_wallet: Situación financiera")
+            for columna_st, nombre in zip(st.columns(len(presentes)), presentes):
+                with columna_st:
+                    v[nombre] = campos_financieros[nombre]()
 
     # Las iteraciones que usan solo variables conocidas antes de llamar no tienen `day` ni `campaign`:
     # el formulario muestra solo los campos que existen en el esquema de la iteración elegida.
@@ -137,33 +143,42 @@ def mostrar(esquema):
                 with columna_st:
                     v[nombre] = campos[nombre]()
 
-    with st.container(border=True):
-        st.markdown("##### :material/history: Historial de campañas anteriores")
-        antes = st.checkbox(
-            "El cliente fue contactado en una campaña anterior", key="in_contactado_antes",
-            help="Si no se marca, se asume que es la primera vez que el banco lo contacta por un producto de este tipo.",
-        )
-        if antes:
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                v["pdays"] = st.number_input(
-                    "Días desde ese último contacto", min_value=0, max_value=esquema["numericas"]["pdays"]["max"],
-                    step=1, key="in_pdays_dias",
-                    help="Días transcurridos desde que se contactó al cliente en la campaña anterior.",
-                )
-            with c2:
-                v["previous"] = _num(
-                    esquema, "previous", "Contactos previos a esta campaña",
-                    "Cantidad de veces que se contactó al cliente antes de la campaña actual.", minimo=1,
-                )
-            with c3:
-                v["poutcome"] = _cat(
-                    esquema, "poutcome", "Resultado de la campaña anterior",
-                    "Qué ocurrió con el cliente en la campaña anterior.",
-                )
-        else:
-            # Así codifica el dataset a un cliente nunca contactado antes
-            v["pdays"], v["previous"], v["poutcome"] = -1, 0, "unknown"
-            st.caption("Cliente sin historial previo: no se usan datos de campañas anteriores.")
+    historial = {"pdays", "previous", "poutcome"} & set(esquema["columnas"])
+    if historial:
+        with st.container(border=True):
+            st.markdown("##### :material/history: Historial de campañas anteriores")
+            antes = st.checkbox(
+                "El cliente fue contactado en una campaña anterior", key="in_contactado_antes",
+                help="Si no se marca, se asume que es la primera vez que el banco lo contacta por un producto de este tipo.",
+            )
+            if antes:
+                campos_historial = {
+                    "pdays": lambda: st.number_input(
+                        "Días desde ese último contacto", min_value=0,
+                        max_value=esquema["numericas"]["pdays"]["max"],
+                        step=1, key="in_pdays_dias",
+                        help="Días transcurridos desde que se contactó al cliente en la campaña anterior.",
+                    ),
+                    "previous": lambda: _num(
+                        esquema, "previous", "Contactos previos a esta campaña",
+                        "Cantidad de veces que se contactó al cliente antes de la campaña actual.", minimo=1,
+                    ),
+                    "poutcome": lambda: _cat(
+                        esquema, "poutcome", "Resultado de la campaña anterior",
+                        "Qué ocurrió con el cliente en la campaña anterior.",
+                    ),
+                }
+                presentes = [col for col in esquema["columnas"] if col in campos_historial]
+                for columna_st, nombre in zip(st.columns(len(presentes)), presentes):
+                    with columna_st:
+                        v[nombre] = campos_historial[nombre]()
+            else:
+                if "pdays" in historial:
+                    v["pdays"] = -1
+                if "previous" in historial:
+                    v["previous"] = 0
+                if "poutcome" in historial:
+                    v["poutcome"] = "unknown"
+                st.caption("Cliente sin historial previo: no se usan datos de campañas anteriores.")
 
     return {col: v[col] for col in esquema["columnas"]}
