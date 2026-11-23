@@ -4,6 +4,7 @@ Ejecutar desde la carpeta del proyecto:  streamlit run app/app.py
 """
 import importlib
 
+import altair as alt
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -290,42 +291,179 @@ with tab_met:
 
         st.dataframe(df_filtrado.style.format(formato), width="stretch", hide_index=True)
 
-        metrica = st.radio("Métrica a comparar", ["F1", "Recall", "Precision", "Accuracy"], horizontal=True)
-        izq, der = st.columns(2)
-        with izq:
-            if iteracion_filtro == "Todas":
-                st.markdown(f"**{metrica} optimizado por iteración**")
-                opt = df_filtrado[df_filtrado["Versión"] == "Optimizado"]
-                estilos.barras(
-                    opt.pivot(index="Modelo", columns="Iteración", values=metrica),
-                    y_titulo=metrica,
+        metrica = st.radio(
+            "Métrica a comparar",
+            ["F1", "Recall", "Precision", "Accuracy"],
+            horizontal=True
+        )
+
+        # Seleccionar una sola versión final por modelo.
+        # Prioridad: optimizado con umbral > optimizado.
+        candidatas = df_filtrado[
+            df_filtrado["Versión"].isin(
+                ["Optimizado", "Optimizado (umbral)"]
+            )
+        ].copy()
+
+        candidatas["Prioridad"] = candidatas["Versión"].map({
+            "Optimizado": 1,
+            "Optimizado (umbral)": 2,
+        })
+
+        finales = (
+            candidatas.sort_values("Prioridad")
+            .drop_duplicates(
+                subset=["Iteración", "Modelo"],
+                keep="last"
+            )
+            .drop(columns="Prioridad")
+        )
+
+        # GRÁFICO 1: COMPARACIÓN DE MODELOS
+        if iteracion_filtro == "Todas":
+            st.markdown(
+                f"**{metrica} final por modelo e iteración**"
+            )
+            comparacion = finales
+            grupo = "Iteración"
+        else:
+            st.markdown(
+                f"**{metrica}: comparación de versiones "
+                f"({iteracion_filtro})**"
+            )
+            comparacion = df_filtrado
+            grupo = "Versión"
+
+        grafico_comparacion = (
+            alt.Chart(comparacion)
+            .mark_bar(cornerRadiusEnd=3)
+            .encode(
+                x=alt.X(
+                    f"{metrica}:Q",
+                    title=metrica,
+                    scale=alt.Scale(domain=[0, 1]),
+                    axis=alt.Axis(format=".0%"),
+                ),
+                y=alt.Y(
+                    "Modelo:N",
+                    title=None,
+                    axis=alt.Axis(
+                        labelLimit=260,
+                        labelFontSize=12
+                    ),
+                ),
+                yOffset=alt.YOffset(f"{grupo}:N"),
+                color=alt.Color(
+                    f"{grupo}:N",
+                    title=grupo,
+                    scale=alt.Scale(
+                        range=[
+                            "#0A4D34",
+                            "#2E9E6B",
+                            "#9AD1B4"
+                        ]
+                    ),
+                ),
+                tooltip=[
+                    alt.Tooltip("Iteración:N"),
+                    alt.Tooltip("Modelo:N"),
+                    alt.Tooltip("Versión:N"),
+                    alt.Tooltip(
+                        f"{metrica}:Q",
+                        format=".4f"
+                    ),
+                ],
+            )
+            .properties(
+                height=max(
+                    260,
+                    85 * comparacion["Modelo"].nunique()
                 )
-            else:
-                sel = df_filtrado
-                if "Base" in sel["Versión"].values:
-                    st.markdown(f"**{metrica}: modelo base vs optimizado** ({iteracion_filtro})")
-                else:
-                    st.markdown(f"**{metrica}: umbral predeterminado vs óptimo** ({iteracion_filtro})")
-                estilos.barras(
-                    sel.pivot(index="Modelo", columns="Versión", values=metrica),
-                    y_titulo=metrica,
-                )
-        with der:
-            st.markdown(f"**Ranking de {metrica}** ({iteracion_filtro})")
-            ranking = df_filtrado[
-                df_filtrado["Versión"].isin(["Optimizado", "Optimizado (umbral)"])
-            ].copy()
-            if not ranking.empty:
-                ranking = ranking.sort_values(metrica, ascending=False)
-                ranking["Categoría"] = (
-                    ranking["Modelo"] + " · " + ranking["Iteración"]
-                    if iteracion_filtro == "Todas"
-                    else ranking["Modelo"] + " · " + ranking["Versión"]
-                )
-                estilos.barras(
-                    ranking.set_index("Categoría")[[metrica]],
-                    y_titulo=metrica,
-                )
+            )
+        )
+
+        st.altair_chart(
+            grafico_comparacion,
+            width="stretch",
+            theme=None
+        )
+
+        # GRÁFICO 2: RANKING SIN DUPLICADOS
+        st.markdown(
+            f"**Ranking de {metrica} ({iteracion_filtro})**"
+        )
+
+        ranking = finales.sort_values(
+            metrica,
+            ascending=False
+        ).copy()
+
+        if iteracion_filtro == "Todas":
+            ranking["Categoría"] = (
+                ranking["Modelo"]
+                + " · "
+                + ranking["Iteración"]
+            )
+        else:
+            ranking["Categoría"] = ranking["Modelo"]
+
+        base_ranking = alt.Chart(ranking).encode(
+            x=alt.X(
+                f"{metrica}:Q",
+                title=metrica,
+                scale=alt.Scale(domain=[0, 1]),
+                axis=alt.Axis(format=".0%"),
+            ),
+            y=alt.Y(
+                "Categoría:N",
+                sort="-x",
+                title=None,
+                axis=alt.Axis(
+                    labelLimit=340,
+                    labelFontSize=12
+                ),
+            ),
+            tooltip=[
+                alt.Tooltip("Iteración:N"),
+                alt.Tooltip("Modelo:N"),
+                alt.Tooltip("Versión:N"),
+                alt.Tooltip(
+                    f"{metrica}:Q",
+                    format=".4f"
+                ),
+            ],
+        )
+
+        barras_ranking = base_ranking.mark_bar(
+            color="#2E9E6B",
+            cornerRadiusEnd=3
+        )
+
+        etiquetas_ranking = base_ranking.mark_text(
+            align="left",
+            baseline="middle",
+            dx=6,
+            color="#0A4D34",
+            fontWeight="bold"
+        ).encode(
+            text=alt.Text(
+                f"{metrica}:Q",
+                format=".3f"
+            )
+        )
+
+        grafico_ranking = (
+            barras_ranking + etiquetas_ranking
+        ).properties(
+            height=max(240, 42 * len(ranking))
+        )
+
+        st.altair_chart(
+            grafico_ranking,
+            width="stretch",
+            theme=None
+        )
+
 
         if iteracion_filtro != "Todas":
             it_filtrada = iteraciones[iteracion_filtro]
