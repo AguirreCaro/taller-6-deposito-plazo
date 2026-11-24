@@ -79,7 +79,8 @@ with tab_pred:
     )
 
     nombre_iter_pred = st.selectbox(
-        "Iteración del modelo", nombres_iteraciones, index=0, key="iteracion_prediccion"
+        "Iteración del modelo", nombres_iteraciones, index=len(nombres_iteraciones) - 1,
+        key="iteracion_prediccion",
     )
     _, rutas_modelos_pred, metricas_pred, esquema_pred = contexto_iteracion(nombre_iter_pred)
     mejor_modelo_pred = metricas_pred["mejor_modelo"] if metricas_pred else None
@@ -160,7 +161,8 @@ with tab_pred:
 with tab_gen:
     st.subheader("Evaluación con datos no vistos en el entrenamiento")
     nombre_iter_gen = st.selectbox(
-        "Iteración del modelo", nombres_iteraciones, index=0, key="iteracion_generalizacion"
+        "Iteración del modelo", nombres_iteraciones, index=len(nombres_iteraciones) - 1,
+        key="iteracion_generalizacion",
     )
     iteracion_gen, rutas_modelos_gen, metricas_gen, esquema_gen = contexto_iteracion(nombre_iter_gen)
     mejor_modelo_gen = metricas_gen["mejor_modelo"] if metricas_gen else None

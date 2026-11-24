@@ -1,4 +1,4 @@
-# Notebook + aplicación Streamlit del Taller 6.
+# Notebook + aplicación Streamlit del Examen.
 # Versiones con las que se desarrolló y probó el proyecto (Python 3.13).
 # scikit-learn debe ser exactamente 1.8.0: los modelos de app/models se guardaron con esa versión.
 numpy==2.4.4
@@ -11,6 +11,5 @@ streamlit==1.58.0
 altair==6.2.1
 notebook
 ipykernel
-ipykernel
-xgboost
-lightgbm
+xgboost==3.4.1
+lightgbm==4.7.0
